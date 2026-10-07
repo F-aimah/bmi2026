@@ -10,6 +10,10 @@ on:
   push: #  workflow_dispatch for manually triggered
     branches: [master]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build: # "build" job
     runs-on: windows-latest # runner
@@ -35,10 +39,17 @@ jobs:
       - name: Publish
         run: dotnet publish -c Release --property:PublishDir=${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       # Deploy to Azure Web apps
-      # - name: Run Azure webapp deploy action using publish profile credentials
-      #   uses: azure/webapps-deploy@v2
-      #   with:
-      #     app-name: ${{ env.AZURE_WEBAPP_NAME }} # your app name
-      #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE  }} # Define secret variable in repository settings as per action documentation
-      #     package: "bmi2021/${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }} # your app name
+          #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE  }} # Define secret variable in repository settings as per action documentation
+          package: "bmi2021/${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
